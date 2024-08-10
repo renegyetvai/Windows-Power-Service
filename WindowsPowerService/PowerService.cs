@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
+using System.Text.Json;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
@@ -16,14 +18,7 @@ namespace WindowsPowerService
 {
     public partial class PowerService : ServiceBase
     {
-        // Constant values
-        private const int MEASUREMENT_DURATION = 300; // 5 minutes in seconds
-        private const int MEASUREMENT_INTERVAL = 5000; // 5 seconds in milliseconds
-        private const int QUEUE_SIZE = MEASUREMENT_DURATION / (MEASUREMENT_INTERVAL / 1000);
-        private const float SINGLE_CORE_THRESHOLD = 20; // 20% CPU usage
-        private const float MULTI_CORE_THRESHOLD = 20; // 20% CPU usage
-        private const string PERFORMANCE_POWER_PLAN = "381b4222-f694-41f0-9685-ff5bb260df2e";
-        private const string LOW_POWER_PLAN = "a1841308-3541-4fab-bc81-f71556f20b4a";
+        private ServiceConfig _config;
 
         // Create a new DataProvider object.
         private DataProvider dataProvider = new DataProvider();
@@ -48,20 +43,29 @@ namespace WindowsPowerService
         protected override void OnStart(string[] args)
         {
             Thread.Sleep(3000);
+            LoadConfig();
+
+            // Check if the power plans are set in the configuration or empty. If empty, stop the service.
+            if (string.IsNullOrEmpty(_config.PerformancePowerPlan) || string.IsNullOrEmpty(_config.LowPowerPlan))
+            {
+                eventLog.WriteEntry("PowerService stopped because the power plans are not set in the configuration.");
+                Stop();
+            }
+
             eventLog.WriteEntry("PowerService started.");
 
             // Initialize the coreCounters list depending on the number of cores.
             int cpuCores = dataProvider.getCoreCount();
             for (int i = 0; i < cpuCores; i++)
             {
-                coreCounters.Add(new Queue<float>(QUEUE_SIZE));
+                coreCounters.Add(new Queue<float>(_config.QueueSize));
             }
 
             eventLog.WriteEntry($"Number of CPU cores detected by Power Service: {cpuCores}");
 
             // Set up a timer that triggers every minute.
             Timer timer = new Timer();
-            timer.Interval = MEASUREMENT_INTERVAL;
+            timer.Interval = _config.MeasurementInterval;
             timer.Elapsed += new ElapsedEventHandler(this.OnTimer);
             timer.Start();
 
@@ -81,7 +85,7 @@ namespace WindowsPowerService
                 float[] usages = dataProvider.GetCpuUsagePerCore();
                 for (int i = 0; i < usages.Length; i++)
                 {
-                    if (coreCounters[i].Count >= QUEUE_SIZE)
+                    if (coreCounters[i].Count >= _config.QueueSize)
                     {
                         coreCounters[i].Dequeue();
                     }
@@ -102,7 +106,7 @@ namespace WindowsPowerService
                     float average = sum / coreCounters[i].Count;
 
                     // Check if the average CPU usage is above the threshold.
-                    if (average >= SINGLE_CORE_THRESHOLD)
+                    if (average >= _config.SingleCoreThreshold)
                     {
                         singleAboveThreshold = true;
                     }
@@ -112,7 +116,7 @@ namespace WindowsPowerService
                 totalAverage /= dataProvider.getCoreCount();
 
                 // Check if the total average CPU usage is above the threshold.
-                if (totalAverage >= MULTI_CORE_THRESHOLD)
+                if (totalAverage >= _config.MultiCoreThreshold)
                 {
                     totalAboveThreshold = true;
                 }
@@ -121,12 +125,12 @@ namespace WindowsPowerService
                 if (totalAboveThreshold || singleAboveThreshold)
                 {
                     // Trigger the performance mode.
-                    TriggerEnergyProfile(PERFORMANCE_POWER_PLAN);
+                    TriggerEnergyProfile(_config.PerformancePowerPlan);
                 }
                 else
                 {
                     // Trigger the power saving mode.
-                    TriggerEnergyProfile(LOW_POWER_PLAN);
+                    TriggerEnergyProfile(_config.LowPowerPlan);
                 }
             }
             catch (Exception ex)
@@ -173,6 +177,40 @@ namespace WindowsPowerService
             {
                 Console.WriteLine($"Error: {ex.Message}");
                 eventLog.WriteEntry($"Error while executing command in cmd: {ex.Message}");
+            }
+        }
+
+        private void LoadConfig()
+        {
+            string rootFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+            string configFolder = Path.Combine(rootFolder, "PowerService");
+            string configFile = Path.Combine(configFolder, "config.json");
+
+            if (!Directory.Exists(configFolder))
+            {
+                Directory.CreateDirectory(configFolder);
+            }
+
+            if (!File.Exists(configFile))
+            {
+                _config = new ServiceConfig
+                {
+                    MeasurementDuration = 300,
+                    MeasurementInterval = 5000,
+                    QueueSize = 60,
+                    SingleCoreThreshold = 20,
+                    MultiCoreThreshold = 20,
+                    PerformancePowerPlan = "",
+                    LowPowerPlan = ""
+                };
+
+                string json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(configFile, json);
+            }
+            else
+            {
+                string json = File.ReadAllText(configFile);
+                _config = JsonSerializer.Deserialize<ServiceConfig>(json);
             }
         }
 
