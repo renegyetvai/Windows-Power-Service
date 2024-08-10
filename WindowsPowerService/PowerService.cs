@@ -7,8 +7,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
+using Timer = System.Timers.Timer;
 
 namespace WindowsPowerService
 {
@@ -26,15 +28,28 @@ namespace WindowsPowerService
         // Create a new DataProvider object.
         private DataProvider dataProvider = new DataProvider();
         // Set up data structures to store the data.
-        private List<Queue<float>> coreCounters;
+        private List<Queue<float>> coreCounters = new List<Queue<float>>();
+        // Eventlog to log the service's activities.
+        private EventLog eventLog = new EventLog();
 
         public PowerService()
         {
             InitializeComponent();
+
+            // Setup the event log.
+            if (!EventLog.SourceExists("PowerServiceSource"))
+            {
+                EventLog.CreateEventSource("PowerServiceSource", "PowerServiceLog");
+            }
+            eventLog.Source = "PowerServiceSource";
+            eventLog.Log = "PowerServiceLog";
         }
 
         protected override void OnStart(string[] args)
         {
+            Thread.Sleep(3000);
+            eventLog.WriteEntry("PowerService started.");
+
             // Initialize the coreCounters list depending on the number of cores.
             int cpuCores = dataProvider.getCoreCount();
             for (int i = 0; i < cpuCores; i++)
@@ -42,65 +57,81 @@ namespace WindowsPowerService
                 coreCounters.Add(new Queue<float>(QUEUE_SIZE));
             }
 
+            eventLog.WriteEntry($"Number of CPU cores detected by Power Service: {cpuCores}");
+
             // Set up a timer that triggers every minute.
             Timer timer = new Timer();
             timer.Interval = MEASUREMENT_INTERVAL;
             timer.Elapsed += new ElapsedEventHandler(this.OnTimer);
             timer.Start();
+
+            eventLog.WriteEntry("PowerService timer started.");
         }
 
         protected override void OnStop()
         {
+            eventLog.WriteEntry("PowerService stopped.");
         }
 
         private void OnTimer(object sender, ElapsedEventArgs args)
         {
-            // Get the CPU usage per core and store each value in the corresponding queue.
-            float[] usages = dataProvider.GetCpuUsagePerCore();
-            for (int i = 0; i < usages.Length; i++)
+            try
             {
-                if (coreCounters[i].Count >= QUEUE_SIZE)
+                // Get the CPU usage per core and store each value in the corresponding queue.
+                float[] usages = dataProvider.GetCpuUsagePerCore();
+                for (int i = 0; i < usages.Length; i++)
                 {
-                    coreCounters[i].Dequeue();
+                    if (coreCounters[i].Count >= QUEUE_SIZE)
+                    {
+                        coreCounters[i].Dequeue();
+                    }
+                    coreCounters[i].Enqueue(usages[i]);
                 }
-                coreCounters[i].Enqueue(usages[i]);
-            }
 
-            // Calculate the average CPU usage per core and all cores.
-            float totalAverage = 0;
-            for (int i = 0; i < coreCounters.Count; i++)
-            {
-                float sum = 0;
-                foreach (float usage in coreCounters[i])
+                // Calculate the average CPU usage per core and all cores.
+                bool totalAboveThreshold = false;
+                bool singleAboveThreshold = false;
+                float totalAverage = 0;
+                for (int i = 0; i < coreCounters.Count; i++)
                 {
-                    sum += usage;
-                }
-                float average = sum / coreCounters[i].Count;
+                    float sum = 0;
+                    foreach (float usage in coreCounters[i])
+                    {
+                        sum += usage;
+                    }
+                    float average = sum / coreCounters[i].Count;
 
-                // Check if the average CPU usage is above the threshold.
-                if (average >= SINGLE_CORE_THRESHOLD)
+                    // Check if the average CPU usage is above the threshold.
+                    if (average >= SINGLE_CORE_THRESHOLD)
+                    {
+                        singleAboveThreshold = true;
+                    }
+
+                    totalAverage += average;
+                }
+                totalAverage /= dataProvider.getCoreCount();
+
+                // Check if the total average CPU usage is above the threshold.
+                if (totalAverage >= MULTI_CORE_THRESHOLD)
+                {
+                    totalAboveThreshold = true;
+                }
+
+                // Decide which power plan to trigger based on the results.
+                if (totalAboveThreshold || singleAboveThreshold)
                 {
                     // Trigger the performance mode.
                     TriggerEnergyProfile(PERFORMANCE_POWER_PLAN);
-                } else if (average < SINGLE_CORE_THRESHOLD)
+                }
+                else
                 {
                     // Trigger the power saving mode.
                     TriggerEnergyProfile(LOW_POWER_PLAN);
                 }
-
-                totalAverage += average;
             }
-            totalAverage /= dataProvider.getCoreCount();
-
-            // Check if the total average CPU usage is above the threshold.
-            if (totalAverage >= MULTI_CORE_THRESHOLD)
+            catch (Exception ex)
             {
-                // Trigger the performance mode.
-                TriggerEnergyProfile(PERFORMANCE_POWER_PLAN);
-            } else if (totalAverage < MULTI_CORE_THRESHOLD)
-            {
-                // Trigger the power saving mode.
-                TriggerEnergyProfile(LOW_POWER_PLAN);
+                eventLog.WriteEntry($"Error in OnTimer: {ex.Message}");
             }
         }
 
@@ -113,7 +144,7 @@ namespace WindowsPowerService
             ExecuteCommand(command);
         }
 
-        static void ExecuteCommand(string command)
+        private void ExecuteCommand(string command)
         {
             try
             {
@@ -130,10 +161,18 @@ namespace WindowsPowerService
                 // Read the output of the command
                 string result = process.StandardOutput.ReadToEnd();
                 process.WaitForExit();
+
+                if (process.ExitCode != 0)
+                {
+                    eventLog.WriteEntry($"Bad error code from cmd command: {process.ExitCode}\n" +
+                        $"Contents of stdout: {process.StandardOutput}\n" +
+                        $"Contents of stderr: {process.StandardError}");
+                }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Error: {ex.Message}");
+                eventLog.WriteEntry($"Error while executing command in cmd: {ex.Message}");
             }
         }
 
