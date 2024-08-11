@@ -1,0 +1,33 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+	<ComponentGroup Id="PowerServiceDependencies" Directory="INSTALLFOLDER">
+    <Component Guid="55CB2CED-12A9-48D1-8252-E421844036F4">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Text.Json.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="4761B87C-3018-4AEA-A3BE-8F74A716B4EB">
+      <File Source="$(var.WindowsPowerService.TargetDir)Microsoft.Bcl.AsyncInterfaces.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="15106533-8FCF-4E57-93F9-230FD815E198">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Buffers.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="E0EDD45E-C403-4813-8E67-318FDA413A25">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Memory.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="E2E9058C-7AD0-42AF-A111-BDB8A9FE50C0">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Numerics.Vectors.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="EEA7EB8F-E6D7-4ED5-A349-9BFC08F0751F">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Runtime.CompilerServices.Unsafe.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="F866FB8D-D90E-4B7E-9485-324E50F2A6EB">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Text.Encodings.Web.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="35E6CAF8-CB43-46F6-A8C5-5138E00FEF51">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.Threading.Tasks.Extensions.dll" KeyPath="yes" />
+    </Component>
+    <Component Guid="A9DB510A-E88E-4B8B-844B-55420F3CD1D9">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.ValueTuple.dll" KeyPath="yes" />
+    </Component>
+	</ComponentGroup>
+  </Fragment>
+</Wix>

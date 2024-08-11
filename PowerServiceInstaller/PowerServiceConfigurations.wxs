@@ -1,0 +1,9 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+	  <ComponentGroup Id="PowerServiceConfigurations" Directory="INSTALLFOLDER">
+      <Component Guid="F0C3ECA2-FC9E-48BA-8E05-35A74ECA1C23">
+          <File Source="$(var.WindowsPowerService.TargetDir)WindowsPowerService.exe.config" KeyPath="yes" />
+      </Component>
+	  </ComponentGroup>
+  </Fragment>
+</Wix>

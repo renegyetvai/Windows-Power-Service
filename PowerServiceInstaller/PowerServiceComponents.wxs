@@ -1,0 +1,15 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+		<ComponentGroup Id="PowerServiceComponents" Directory="INSTALLFOLDER">
+			<Component>
+				<File Source="$(var.WindowsPowerService.TargetDir)WindowsPowerService.exe" />
+				<ServiceInstall Name="PowerService" DisplayName="Power Service" 
+                        Description="This service manages windows power plans based on the cpu usage." 
+                        Type="ownProcess" Start="auto" ErrorControl="normal" Account="LocalSystem"
+                        Vital="yes" Interactive="no" />
+        <!-- <ServiceControl Name="PowerService" Start="install" Stop="uninstall" Remove="uninstall" /> -->
+        <ServiceControl Name="PowerService" Stop="both" Remove="uninstall" />
+			</Component>
+		</ComponentGroup>
+  </Fragment>
+</Wix>
