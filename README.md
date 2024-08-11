@@ -1,5 +1,32 @@
 # Windows Power Service
 
+## General
+
+The Windows Power Service is a service that enables Windows Power plans to be managed dynamically. The service can switch between two plans that were previously defined in a configuration file. The change of plans is based on the CPU utilization. 
+
+## Installation for users
+
+The installation for users is carried out via an installation program in MSI format. The installation program can be downloaded via [Releases](https://github.com/renegyetvai/Windows-Power-Service/releases). Once the installation program has been downloaded, it can be started by double-clicking on it. The following steps are necessary to install the Windows Power Service:
+
+1. start the installation program
+2. confirm the user account control (UAC)
+3. start a command prompt (CMD) as administrator
+4. start the Windows Power Service with the command `net start PowerService`
+
+> [!NOTE]
+> The Windows Power Service can also be started via the Windows services. To do this, the service `Power Service` must be started in the service administration.
+
+> [!WARNING]
+> When the Windows Power Service is run for the first time, a configuration file is created first. After the service has created the corresponding directory and the configuration file in it, it is automatically stopped. This is necessary because the energy profiles cannot be created initially and must be entered by the user. The configuration file is located in the directory `C:\ProgramData\PowerService` and is called `config.json`.
+
+> [!NOTE]
+> To determine the GUIDs of the power profiles, the command `powercfg /list` can be executed in the command prompt (CMD).
+
+5. edit the configuration file `config.json` in the directory `C:\ProgramData\PowerService`
+6. restart the Windows Power Service with the command `net start PowerService`.
+
+# Windows Power Service - German
+
 ## Allgemein
 
 Der Windows Power Service ist ein Service, der es ermöglicht, Windows Power Pläne dynamisch zu verwalten. Dabei kann der Service zwischen zwei Plänen wechseln, die zuvor in einer Konfigurationsdatei festgelegt wurden. Der Wechsel der Pläne erfolgt auf Basis der CPU Auslastung. 
