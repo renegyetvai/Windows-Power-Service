@@ -13,11 +13,14 @@ Die Installation für Anwender erfolgt über ein Installationsprogramm im MSI Fo
 3. Starten einer Command Prompt (CMD) als Administrator
 4. Starten des Windows Power Service mit dem Befehl `net start PowerService`
 
-> [!NOTE] Der Windows Power Service kann auch über die Windows Dienste gestartet werden. Dazu muss der Dienst `Power Service` in der Diensteverwaltung gestartet werden.
+> [!NOTE]
+> Der Windows Power Service kann auch über die Windows Dienste gestartet werden. Dazu muss der Dienst `Power Service` in der Diensteverwaltung gestartet werden.
 
-> [!WARNING] Bei der ersten Ausführung des Windows Power Service wird zunächst eine Konfigurationsdatei erstellt. Nachdem der Dienst das entsprechende Verzeichnis und die Konfigurationsdatei darin erstellt hat, wird er automatisch gestoppt. Dies ist notwendig, da die Energieprofile initial nicht erstellt werden können und vom Nutzer eingetragen werden müssen. Die Konfigurationsdatei befindet sich im Verzeichnis `C:\ProgramData\PowerService` und heißt `config.json`.
+> [!WARNING]
+> Bei der ersten Ausführung des Windows Power Service wird zunächst eine Konfigurationsdatei erstellt. Nachdem der Dienst das entsprechende Verzeichnis und die Konfigurationsdatei darin erstellt hat, wird er automatisch gestoppt. Dies ist notwendig, da die Energieprofile initial nicht erstellt werden können und vom Nutzer eingetragen werden müssen. Die Konfigurationsdatei befindet sich im Verzeichnis `C:\ProgramData\PowerService` und heißt `config.json`.
 
-> [!NOTE] Um die GUIDs der Energieprofile zu ermitteln, kann der Befehl `powercfg /list` in der Command Prompt (CMD) ausgeführt werden.
+> [!NOTE]
+> Um die GUIDs der Energieprofile zu ermitteln, kann der Befehl `powercfg /list` in der Command Prompt (CMD) ausgeführt werden.
 
 5. Bearbeiten der Konfigurationsdatei `config.json` im Verzeichnis `C:\ProgramData\PowerService`
 6. Erneutes starten des Windows Power Service mit dem Befehl `net start PowerService`
