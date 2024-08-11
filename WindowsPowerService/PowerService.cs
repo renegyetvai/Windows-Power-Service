@@ -182,35 +182,47 @@ namespace WindowsPowerService
 
         private void LoadConfig()
         {
-            string rootFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            string configFolder = Path.Combine(rootFolder, "PowerService");
-            string configFile = Path.Combine(configFolder, "config.json");
+            string rootFolder = "";
+            string configFolder = "";
+            string configFile = "";
 
-            if (!Directory.Exists(configFolder))
+            try
             {
-                Directory.CreateDirectory(configFolder);
-            }
+                rootFolder = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                configFolder = Path.Combine(rootFolder, "PowerService");
+                configFile = Path.Combine(configFolder, "config.json");
 
-            if (!File.Exists(configFile))
-            {
-                _config = new ServiceConfig
+                if (!Directory.Exists(configFolder))
                 {
-                    MeasurementDuration = 300,
-                    MeasurementInterval = 5000,
-                    QueueSize = 60,
-                    SingleCoreThreshold = 20,
-                    MultiCoreThreshold = 20,
-                    PerformancePowerPlan = "",
-                    LowPowerPlan = ""
-                };
+                    Directory.CreateDirectory(configFolder);
+                }
 
-                string json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(configFile, json);
+                if (!File.Exists(configFile))
+                {
+                    _config = new ServiceConfig
+                    {
+                        MeasurementDuration = 300,
+                        MeasurementInterval = 5000,
+                        QueueSize = 60,
+                        SingleCoreThreshold = 20,
+                        MultiCoreThreshold = 20,
+                        PerformancePowerPlan = "",
+                        LowPowerPlan = ""
+                    };
+
+                    string json = JsonSerializer.Serialize(_config, new JsonSerializerOptions { WriteIndented = true });
+                    File.WriteAllText(configFile, json);
+                }
+                else
+                {
+                    string json = File.ReadAllText(configFile);
+                    _config = JsonSerializer.Deserialize<ServiceConfig>(json);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                string json = File.ReadAllText(configFile);
-                _config = JsonSerializer.Deserialize<ServiceConfig>(json);
+                eventLog.WriteEntry($"Error while loading configuration: {ex.Message}");
+                eventLog.WriteEntry($"Tried to load config file at path: {configFolder}");
             }
         }
 
