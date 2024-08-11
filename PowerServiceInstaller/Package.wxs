@@ -2,6 +2,8 @@
   <Package Name="Power Service" Manufacturer="DaneBlu Tools" Version="1.0.0.0" UpgradeCode="b3c55c52-0443-4cd0-98e3-6a83e4f891f5">
     <MajorUpgrade DowngradeErrorMessage="!(loc.DowngradeError)" />
 
+    <MediaTemplate EmbedCab="yes" />
+    
     <Feature Id="Main">
       <ComponentGroupRef Id="PowerServiceComponents" />
       <ComponentGroupRef Id="PowerServiceDependencies"/>
