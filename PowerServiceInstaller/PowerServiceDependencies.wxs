@@ -25,8 +25,8 @@
     <Component Guid="35E6CAF8-CB43-46F6-A8C5-5138E00FEF51">
       <File Source="$(var.WindowsPowerService.TargetDir)System.Threading.Tasks.Extensions.dll" KeyPath="yes" />
     </Component>
-    <Component Guid="A9DB510A-E88E-4B8B-844B-55420F3CD1D9">
-      <File Source="$(var.WindowsPowerService.TargetDir)System.ValueTuple.dll" KeyPath="yes" />
+    <Component Guid="1937720B-D243-4EE5-A4A2-9348763F098E">
+      <File Source="$(var.WindowsPowerService.TargetDir)System.IO.Pipelines.dll" KeyPath="yes" />
     </Component>
 	</ComponentGroup>
   </Fragment>
